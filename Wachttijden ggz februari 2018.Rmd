@@ -1,0 +1,120 @@
+---
+title: "Wachttijden februari 2018"
+author: "Nederlandse Zorgautoriteit"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+rm(list = ls())
+
+require(data.table)
+require(knitr)
+
+wt_type_voor_scan <- c("BGGZ", "SGGZ", "Combi")
+wt_circuit_voor_scan <- c("Ouderen", "Adolescenten", "Volwassenen", "Verslavingszorg")
+
+mq18q1x <- data.table(read.csv2("input/180309_GGZ_wachttijden_extra verzameling.csv"))
+mq18q1x <- mq18q1x[!is.na(Uniek_zorgaanbiederID)]
+mq18q1x[, ROW_ID := 1:nrow(mq18q1x)]
+
+source('code\\functies (openbaar).R')
+
+mq18q1x <- clean_data(mq18q1x)
+
+# Wachttijden instellingen (overall) --------------------------------------
+
+# Basis-ggz
+gbggzq1 <- voorbereidenWachttijdenGBGGZ(mq18q1x)
+
+# Gespecialiseerde ggz (algemeen)
+gggzq1alg <- voorbereidenWachttijdenGespecialiseerdeGGZAlgemeen(mq18q1x)
+
+# Gespecialiseerde ggz (diagnoses)
+gggzq1diag <- voorbereidenWachttijdenInstellingenDiagnoses(mq18q1x)
+
+# Regioplots totale wachttijd
+regio <- regio(mq18q1x)
+
+wt_infokaart <- data.table(read.csv2('input\\Gewogen algemene wachttijden informatiekaart.csv'))
+```
+
+# Aanmeldwachttijden en totale wachttijden
+Hieronder staan de aanmeldwachttijden en totale wachttijden, gemeten in weken, zoals door MediQuest opgehaald op websites van instellingen en vrijgevestigde aanbieders in februari 2018. De berekende wachttijden zijn niet gewogen naar patiëntaantallen. In de tabellen hieronder worden de ongewogen wachttijden vergeleken met de gewogen wachttijd, zoals gepubliceerd in de informatiekaart.
+
+### Aanmeldwachttijd
+```{r Aanmeldwachttijd (algemeen), echo = F, results = 'as.is'}
+res.gb <- gbggzq1$subgroepen[Circuit == 'Volwassenen']
+res.g <- gggzq1alg$subgroepen[Circuit == 'Volwassenen' & Type_aanbieder == 'Vrijgevestigde']
+res.g.diag <- gggzq1diag$subgroepen
+
+res.gb <- res.gb[, c('Circuit', 'Aanmeldtijd'), with = F]
+res.gb$Circuit <- 'Generalistische basis-ggz (vrijgevestigd en instellingen)'
+res.g.diag <- res.g.diag[Hoofddiagnosegroep != 'Geen onderscheid naar hoofddiagnosegroepen', c('Hoofddiagnosegroep', 'Aanmeldtijd'), with = F][order(Hoofddiagnosegroep)]
+res.g <- res.g[, c('Circuit', 'Aanmeldtijd'), with = F]
+res.g$Circuit <- 'Vrijgevestigde aanbieders (gespecialiseerde ggz)'
+
+table1 <- rbindlist(list(res.gb, res.g.diag, res.g))
+setkey(table1, Circuit)
+setkey(wt_infokaart, Circuit)
+
+table1 <- wt_infokaart[, c('Circuit', 'Aanmeldwachttijd'), with = F][table1]
+table1 <- table1[, c('Circuit', 'Aanmeldtijd', 'Aanmeldwachttijd'), with = F]
+
+names(table1) <- c('Circuit / Diagnosegroepen', 'Ongewogen (berekend)', 'Gewogen (informatiekaart)')
+kable(table1)
+```
+
+### Totale wachttijd
+```{r Totale wachttijd (algemeen), echo = F, results = 'as.is'}
+res.gb <- gbggzq1$subgroepen[Circuit == 'Volwassenen']
+res.g <- gggzq1alg$subgroepen[Circuit == 'Volwassenen' & Type_aanbieder == 'Vrijgevestigde']
+res.g.diag <- gggzq1diag$subgroepen
+
+res.gb <- res.gb[, c('Circuit', 'Totaletijd'), with = F]
+res.gb$Circuit <- 'Generalistische basis-ggz (vrijgevestigd en instellingen)'
+res.g.diag <- res.g.diag[Hoofddiagnosegroep != 'Geen onderscheid naar hoofddiagnosegroepen', c('Hoofddiagnosegroep', 'Totaletijd'), with = F][order(Hoofddiagnosegroep)]
+res.g <- res.g[, c('Circuit', 'Totaletijd'), with = F]
+res.g$Circuit <- 'Vrijgevestigde aanbieders (gespecialiseerde ggz)'
+
+table2 <- rbindlist(list(res.gb, res.g.diag, res.g))
+setkey(table2, Circuit)
+setkey(wt_infokaart, Circuit)
+
+table2 <- wt_infokaart[, c('Circuit', 'Totale.wachttijd'), with = F][table2]
+table2 <- table2[, c('Circuit', 'Totaletijd', 'Totale.wachttijd'), with = F]
+
+names(table2) <- c('Circuit / Diagnosegroepen', 'Ongewogen (berekend)', 'Gewogen (informatiekaart)')
+kable(table2)
+```
+
+# Totale wachttijd per zorgkantoorregio
+Hieronder is de totale wachttijd te zien per zorgkantoorregio. Deze is berekend als ongewogen gemiddelde van de totale wachttijd over alle locaties in een zorgkantoorregio. In de informatiekaart is deze wachttijd ook ongewogen, omdat we geen informatie hebben over de patiëntaantallen op locatieniveau van de aanbieder.
+```{r Regiotabel, echo = F, results = 'as.is'}
+tbl.regio.gb <- regio$tbl.gb
+tbl.regio.g <- regio$tbl.g
+
+names(tbl.regio.gb) <- c('Zorgkantoorregio', 'gb-ggz')
+names(tbl.regio.g) <- c('Zorgkantoorregio', 'g-ggz')
+
+tbl.regio <- merge(tbl.regio.gb, tbl.regio.g, by = 'Zorgkantoorregio', all = T)
+kable(tbl.regio)
+```
+
+# Bijlage
+### Waarnemingen aanmeld- en behandelwachttijden
+Hieronder staat het aantal locaties voor de verschillende aanmeldwachttijden en totale wachttijden.
+```{r aantal observaties wachttijden instellingen, echo = F, results = 'as.is'}
+res.gb <- gbggzq1$subgroepen[Circuit == 'Volwassenen']
+res.g <- gggzq1alg$subgroepen[Circuit == 'Volwassenen' & Type_aanbieder == 'Vrijgevestigde']
+res.g.diag <- gggzq1diag$subgroepen
+
+res.gb <- res.gb[, c('Circuit', 'AANT_OBS_AAN', 'AANT_OBS_TOT'), with = F]
+res.gb$Circuit <- 'Generalistische basis-ggz (vrijgevestigd en instellingen)'
+res.g.diag <- res.g.diag[Hoofddiagnosegroep != 'Geen onderscheid naar hoofddiagnosegroepen', c('Hoofddiagnosegroep', 'AANT_OBS_AAN', 'AANT_OBS_TOT'), with = F][order(Hoofddiagnosegroep)]
+res.g <- res.g[, c('Circuit', 'AANT_OBS_AAN', 'AANT_OBS_TOT'), with = F]
+res.g$Circuit <- 'Vrijgevestigde aanbieders (gespecialiseerde ggz)'
+
+tableB1 <- rbindlist(list(res.gb, res.g.diag, res.g))
+names(tableB1) <- c('Circuit / diagnosegroep', 'Aanmeldwachttijd', 'Totale wachttijd')
+kable(tableB1)
+```
