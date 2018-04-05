@@ -1,7 +1,9 @@
 ---
 title: "Wachttijden februari 2018"
 author: "Nederlandse Zorgautoriteit"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -35,11 +37,13 @@ gggzq1diag <- voorbereidenWachttijdenInstellingenDiagnoses(mq18q1x)
 # Regioplots totale wachttijd
 regio <- regio(mq18q1x)
 
+write.csv2(mq18q1x, "Verrijkte dataset wachttijden ggz februari 2018.csv", row.names = F)
+
 wt_infokaart <- data.table(read.csv2('input\\Gewogen algemene wachttijden informatiekaart.csv'))
 ```
 
 # Aanmeldwachttijden en totale wachttijden
-Hieronder staan de aanmeldwachttijden en totale wachttijden, gemeten in weken, zoals door MediQuest opgehaald op websites van instellingen en vrijgevestigde aanbieders in februari 2018. De berekende wachttijden zijn niet gewogen naar patiëntaantallen. In de tabellen hieronder worden de ongewogen wachttijden vergeleken met de gewogen wachttijd, zoals gepubliceerd in de informatiekaart.
+Hieronder staan de aanmeldwachttijden en totale wachttijden, gemeten in weken, zoals door MediQuest opgehaald op websites van instellingen en vrijgevestigde aanbieders in februari 2018. De berekende wachttijden zijn niet gewogen naar pati?ntaantallen. In de tabellen hieronder worden de ongewogen wachttijden vergeleken met de gewogen wachttijd, zoals gepubliceerd in de informatiekaart.
 
 ### Aanmeldwachttijd
 ```{r Aanmeldwachttijd (algemeen), echo = F, results = 'as.is'}
@@ -88,7 +92,7 @@ kable(table2)
 ```
 
 # Totale wachttijd per zorgkantoorregio
-Hieronder is de totale wachttijd te zien per zorgkantoorregio. Deze is berekend als ongewogen gemiddelde van de totale wachttijd over alle locaties in een zorgkantoorregio. In de informatiekaart is deze wachttijd ook ongewogen, omdat we geen informatie hebben over de patiëntaantallen op locatieniveau van de aanbieder.
+Hieronder is de totale wachttijd te zien per zorgkantoorregio. Deze is berekend als ongewogen gemiddelde van de totale wachttijd over alle locaties in een zorgkantoorregio. In de informatiekaart is deze wachttijd ook ongewogen, omdat we geen informatie hebben over de pati?ntaantallen op locatieniveau van de aanbieder.
 ```{r Regiotabel, echo = F, results = 'as.is'}
 tbl.regio.gb <- regio$tbl.gb
 tbl.regio.g <- regio$tbl.g
